@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- ===== DAO Stubs (in-memory) ===== -->
+    <bean id="orderDaoStub"   class="org.mthree.flooringmastery.dao.OrderDaoStubImpl"/>
+    <bean id="taxDaoStub"     class="org.mthree.flooringmastery.dao.TaxDaoStubImpl"/>
+    <bean id="productDaoStub" class="org.mthree.flooringmastery.dao.ProductDaoStubImpl"/>
+    <bean id="auditDaoStub"   class="org.mthree.flooringmastery.dao.AuditDaoStubImpl"/>
+    <bean id="exportDaoStub"  class="org.mthree.flooringmastery.dao.ExportDaoStubImpl"/>
+
+    <!-- ===== Service wired to stubs ===== -->
+    <bean id="serviceLayer" class="org.mthree.flooringmastery.service.FlooringMasteryServiceLayerImpl">
+        <constructor-arg ref="orderDaoStub"/>
+        <constructor-arg ref="taxDaoStub"/>
+        <constructor-arg ref="productDaoStub"/>
+        <constructor-arg ref="auditDaoStub"/>
+        <constructor-arg ref="exportDaoStub"/>
+    </bean>
+
+</beans>
