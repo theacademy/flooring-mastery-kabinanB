@@ -105,41 +105,109 @@ public class FlooringMasteryView {
         return orderNumber;
     }
 
-    public Order getEditOrderInput(List<Order> orders, List<Tax> taxes, List<Product> products) {
-        LocalDate date = this.promptAnyDate("Please enter the date of the order");
+    public Order getEditOrderInput(LocalDate date,
+                                   List<Order> orders,
+                                   List<Tax> taxes,
+                                   List<Product> products) {
+
         int orderNumber = this.getOrderNumberInput(orders);
-        List<Order> sameDate = (List)orders.stream().filter((o) -> o.getOrderDate().isEqual(date)).collect(Collectors.toList());
+
+        List<Order> sameDate = orders.stream()
+                .filter(o -> o.getOrderDate().isEqual(date))
+                .collect(java.util.stream.Collectors.toList());
+
         if (sameDate.isEmpty()) {
             this.io.print("No orders found for this date.");
             return null;
-        } else {
-            Order original = (Order)sameDate.stream().filter((o) -> o.getOrderNumber() == orderNumber).findFirst().orElse((Order) null);
-            if (original == null) {
-                this.io.print("Order not found.");
+        }
+
+        Order original = sameDate.stream()
+                .filter(o -> o.getOrderNumber() == orderNumber)
+                .findFirst()
+                .orElse(null);
+
+        if (original == null) {
+            this.io.print("Order not found.");
+            return null;
+        }
+
+        String nameIn  = this.io.readString("Enter customer name (" + original.getCustomerName() + "): ").trim();
+        String stateIn = this.io.readString("Enter state (" + original.getState() + "): ").trim();
+        String prodIn  = this.io.readString("Enter product type (" + original.getProductType() + "): ").trim();
+        String areaIn  = this.io.readString("Enter area (" + String.valueOf(original.getArea()) + "): ").trim();
+
+        // Name: keep entered value or original (no interactive validation)
+        String newName = nameIn.isEmpty() ? original.getCustomerName() : nameIn;
+
+        // State: if provided, lookup by abbrev or full name; else keep original state/tax
+        Tax newState;
+        if (stateIn.isEmpty()) {
+            newState = taxes.stream()
+                    .filter(t -> t.getStateAbbreviation().equalsIgnoreCase(original.getState())
+                            || t.getStateName().equalsIgnoreCase(original.getState()))
+                    .findFirst().orElse(null);
+            if (newState == null) {
+                this.io.print("State not found.");
                 return null;
-            } else {
-                String nameIn = this.io.readString("Enter customer name (" + original.getCustomerName() + "): ").trim();
-                String stateIn = this.io.readString("Enter state (" + original.getState() + "): ").trim();
-                String prodIn = this.io.readString("Enter product type (" + original.getProductType() + "): ").trim();
-                String areaIn = this.io.readString("Enter area (" + String.valueOf(original.getArea()) + "): ").trim();
-                String newName = nameIn.isEmpty() ? original.getCustomerName() : this.validateNameInput("");
-                Tax newState = stateIn.isEmpty() ? (Tax)taxes.stream().filter((t) -> t.getStateAbbreviation().equalsIgnoreCase(original.getState()) || t.getStateName().equalsIgnoreCase(original.getState())).findFirst().orElseThrow((Supplier)null) : this.validateStateInput(stateIn, taxes);
-                Product newProduct = prodIn.isEmpty() ? (Product)products.stream().filter((p) -> p.getProductType().equalsIgnoreCase(original.getProductType())).findFirst().orElseThrow((Supplier)null) : this.validateProductInput(prodIn, products);
-                BigDecimal newArea = areaIn.isEmpty() ? original.getArea() : this.validateAreaInput(areaIn);
-                Order edited = new Order();
-                edited.setOrderDate(original.getOrderDate());
-                edited.setOrderNumber(original.getOrderNumber());
-                edited.setCustomerName(newName);
-                edited.setState(newState.getStateAbbreviation());
-                edited.setTaxRate(newState.getTaxRate());
-                edited.setProductType(newProduct.getProductType());
-                edited.setCostPerSquareFoot(newProduct.getCostPerSquareFoot());
-                edited.setLaborCostPerSquareFoot(newProduct.getLaborCostPerSquareFoot());
-                edited.setArea(newArea);
-                return edited;
+            }
+        } else {
+            newState = taxes.stream()
+                    .filter(t -> t.getStateAbbreviation().equalsIgnoreCase(stateIn)
+                            || t.getStateName().equalsIgnoreCase(stateIn))
+                    .findFirst().orElse(null);
+            if (newState == null) {
+                this.io.print("Invalid state.");
+                return null;
             }
         }
+
+        // Product: if provided, lookup; else keep original product
+        Product newProduct;
+        if (prodIn.isEmpty()) {
+            newProduct = products.stream()
+                    .filter(p -> p.getProductType().equalsIgnoreCase(original.getProductType()))
+                    .findFirst().orElse(null);
+            if (newProduct == null) {
+                this.io.print("Product not found.");
+                return null;
+            }
+        } else {
+            newProduct = products.stream()
+                    .filter(p -> p.getProductType().equalsIgnoreCase(prodIn))
+                    .findFirst().orElse(null);
+            if (newProduct == null) {
+                this.io.print("Invalid product type.");
+                return null;
+            }
+        }
+
+        // Area: if provided, parse; else keep original
+        BigDecimal newArea;
+        if (areaIn.isEmpty()) {
+            newArea = original.getArea();
+        } else {
+            try {
+                newArea = new BigDecimal(areaIn);
+            } catch (NumberFormatException ex) {
+                this.io.print("Invalid area.");
+                return null;
+            }
+        }
+
+        Order edited = new Order();
+        edited.setOrderDate(original.getOrderDate());
+        edited.setOrderNumber(original.getOrderNumber());
+        edited.setCustomerName(newName);
+        edited.setState(newState.getStateAbbreviation());
+        edited.setTaxRate(newState.getTaxRate());
+        edited.setProductType(newProduct.getProductType());
+        edited.setCostPerSquareFoot(newProduct.getCostPerSquareFoot());
+        edited.setLaborCostPerSquareFoot(newProduct.getLaborCostPerSquareFoot());
+        edited.setArea(newArea);
+        return edited;
     }
+
+
 
     public void displayEditOrderSuccess() {
         this.io.print("=== You have successfully edited an order ===");
@@ -180,6 +248,7 @@ public class FlooringMasteryView {
     public void displayErrorMessage(String errorMsg) {
         this.io.print("=== ERROR ===");
         this.io.print(errorMsg);
+        this.io.readString("Please hit enter to continue.");
     }
 
     public LocalDate promptAnyDate(String prompt) {

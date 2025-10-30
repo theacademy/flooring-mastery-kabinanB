@@ -23,33 +23,38 @@ public class FlooringMasteryController {
         this.service = service;
     }
 
+
+    /**
+     * The main brain, syntax inspired by ClassRoster
+     */
     public void run() {
         boolean keepGoing = true;
 
         try {
+
             while(keepGoing) {
                 int selection = this.view.printMenuAndGetSelection();
                 switch (selection) {
                     case 1:
-                        this.displayOrders();
+                        displayOrders();
                         break;
                     case 2:
-                        this.addOrder();
+                        addOrder();
                         break;
                     case 3:
-                        this.editOrder();
+                        editOrder();
                         break;
                     case 4:
-                        this.removeOrder();
+                        removeOrder();
                         break;
                     case 5:
-                        this.exportAllData();
+                        exportAllData();
                         break;
                     case 6:
                         keepGoing = false;
                         break;
                     default:
-                        this.unknownCommand();
+                        unknownCommand();
                 }
             }
 
@@ -60,13 +65,24 @@ public class FlooringMasteryController {
 
     }
 
+
+    /*
+    Display any orders given the date
+    if not found or invalid input the view handles this error
+     */
     private void displayOrders() throws FlooringMasteryPersistenceException {
         LocalDate date = this.view.promptAnyDate("Enter an order date (MM-dd-yyyy): ");
 
         try {
-            List<Order> orders = this.service.getOrdersForDate(date);
-            if (orders != null || !orders.isEmpty()) {
+            List<Order> orders = service.getOrdersForDate(date);
+            if (!orders.isEmpty()) {
                 this.view.displayOrders(orders);
+            }
+            else
+            {
+                view.displayErrorMessage("No orders found for that date.");
+
+
             }
 
         } catch (NullPointerException var3) {
@@ -74,6 +90,11 @@ public class FlooringMasteryController {
         }
     }
 
+    /*
+    Adding an order given previous orders.
+    Looks up into file for infos about Products and Taxes
+
+     */
     private void addOrder() throws FlooringMasteryPersistenceException {
         this.view.displayAddOrderBanner();
         List<Tax> taxes = this.service.getTaxes();
@@ -89,13 +110,19 @@ public class FlooringMasteryController {
         }
     }
 
+
+    /**
+     * Edits any order in the folder
+     * Current Implementation is not great
+     * @throws FlooringMasteryPersistenceException
+     */
     private void editOrder() throws FlooringMasteryPersistenceException {
         this.view.displayEditOrderBanner();
         List<Tax> taxes = this.service.getTaxes();
         List<Product> products = this.service.getProducts();
         LocalDate date = this.view.promptAnyDate("Enter the date of the order to edit (MM-dd-yyyy): ");
         List<Order> ordersForDate = this.service.getOrdersForDate(date);
-        Order edited = this.view.getEditOrderInput(ordersForDate, taxes, products);
+        Order edited = view.getEditOrderInput(date, ordersForDate, taxes, products);
         if (edited != null) {
             Order original = this.service.getOrder(date, edited.getOrderNumber());
             if (original == null) {
@@ -119,6 +146,10 @@ public class FlooringMasteryController {
         }
     }
 
+    /*
+    Remove order given date an order number
+     */
+
     private void removeOrder() throws FlooringMasteryPersistenceException {
         this.view.displayRemoveOrderBanner();
         LocalDate date = this.view.promptAnyDate("Enter the date of the order to remove (MM-dd-yyyy): ");
@@ -141,6 +172,9 @@ public class FlooringMasteryController {
         }
     }
 
+    /*
+    Optional
+     */
     private void exportAllData() throws FlooringMasteryPersistenceException {
         if (!this.view.getConfirmation()) {
             this.view.displayErrorMessage("Export cancelled.");
