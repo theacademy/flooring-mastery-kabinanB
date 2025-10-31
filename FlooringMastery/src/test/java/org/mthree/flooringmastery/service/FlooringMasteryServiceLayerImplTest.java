@@ -22,9 +22,7 @@ public class FlooringMasteryServiceLayerImplTest {
 
     @BeforeEach
     public void setup() {
-        auditDao.entries.clear();
-        exportDao.called = false;
-        exportDao.snapshot = null;
+
     }
 
     @Test
@@ -93,6 +91,9 @@ public class FlooringMasteryServiceLayerImplTest {
 
     @Test
     void getTaxes_and_getProducts_passThrough() {
+        LocalDate d = LocalDate.now().plusDays(4);
+        service.addOrder(makeOrder(d, 1, "Dan", "TX", "Tile", "100"));
+
         assertEquals(1, service.getTaxes().size());
         assertEquals("TX", service.getTaxes().get(0).getStateAbbreviation());
         assertEquals(1, service.getProducts().size());
